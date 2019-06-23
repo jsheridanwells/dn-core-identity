@@ -41,11 +41,11 @@ namespace AuthService
             });
             IMapper mapper = mappingConfig.CreateMapper();
             services.AddSingleton(mapper);
-            
-            var appSettingsSection = Configuration.GetSection("AppSettings");
-            services.Configure<AppSettings>(appSettingsSection);
-            var appSettings = appSettingsSection.Get<AppSettings>();
-            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+
+            var tokenSection = Configuration.GetSection("TokenManagement");
+            services.Configure<TokenManagement>(tokenSection);
+            var token = Configuration.GetSection("TokenManagement").Get<TokenManagement>();
+            var key = Encoding.ASCII.GetBytes(token.Secret);
 
             services.AddAuthentication(x =>
                 {
@@ -54,31 +54,18 @@ namespace AuthService
                 })
                 .AddJwtBearer(x =>
                 {
-                    x.Events = new JwtBearerEvents
-                    {
-                        OnTokenValidated = context =>
-                        {
-                            var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                            var userId = int.Parse(context.Principal.Identity.Name);
-                            var user = userService.GetById(userId);
-                            if (user == null)
-                            {
-                                // return unauthorized if user no longer exists
-                                context.Fail("Unauthorized");
-                            }
-                            return Task.CompletedTask;
-                        }
-                    };
                     x.RequireHttpsMetadata = false;
                     x.SaveToken = true;
                     x.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(key),
+                        ValidIssuer = token.Issuer,
+                        ValidAudience = token.Audience,
                         ValidateIssuer = false,
-                        ValidateAudience = false
+                        ValidateAudience = false 
                     };
-                }); 
+                });
             services.AddScoped<IUserService, UserService>();
         }
 

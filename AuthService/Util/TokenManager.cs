@@ -9,9 +9,9 @@ namespace AuthService.Util
 {
     public class TokenManager
     {
-        private readonly AppSettings _settings;
+        private readonly TokenManagement _settings;
 
-        public TokenManager(IOptions<AppSettings> settings)
+        public TokenManager(IOptions<TokenManagement> settings)
         {
             _settings = settings.Value;
         }

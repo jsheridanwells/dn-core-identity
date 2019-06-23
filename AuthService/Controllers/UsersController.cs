@@ -18,10 +18,10 @@ namespace AuthService.Controllers
     {
         private readonly IUserService _service;
         private readonly IMapper _mapper;
-        private readonly AppSettings _settings;
+        private readonly TokenManagement _settings;
         private readonly TokenManager _tokenManager;
 
-        public UsersController(IUserService service, IMapper mapper, IOptions<AppSettings> settings)
+        public UsersController(IUserService service, IMapper mapper, IOptions<TokenManagement> settings)
         {
             _service = service;
             _mapper = mapper;
