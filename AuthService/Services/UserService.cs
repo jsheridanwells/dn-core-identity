@@ -11,7 +11,7 @@ namespace AuthService.Services
     {
         User Authenticate(string username, string password);
         Task Create(User user, string password);
-        Task<User> GetById(int id);
+        User GetById(int id);
     }
     
     public class UserService : IUserService
@@ -48,9 +48,9 @@ namespace AuthService.Services
             await _ctx.SaveChangesAsync();
         }
 
-        public async Task<User> GetById(int id)
+        public User GetById(int id)
         {
-            return await _ctx.Users.FindAsync(id);
+            return _ctx.Users.Find(id);
         }
     }
 }

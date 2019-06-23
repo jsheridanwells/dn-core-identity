@@ -18,13 +18,15 @@ namespace AuthService.Controllers
     {
         private readonly IUserService _service;
         private readonly IMapper _mapper;
-        private readonly IOptions<AppSettings> _settings;
+        private readonly AppSettings _settings;
+        private readonly TokenManager _tokenManager;
 
         public UsersController(IUserService service, IMapper mapper, IOptions<AppSettings> settings)
         {
             _service = service;
             _mapper = mapper;
-            _settings = settings;
+            _settings = settings.Value;
+            _tokenManager = new TokenManager(settings);
         }
         [AllowAnonymous]
         [HttpPost("register")]
@@ -45,10 +47,17 @@ namespace AuthService.Controllers
 
         [AllowAnonymous]
         [HttpPost("auth")]
-        public async Task<IActionResult> Authenticate([FromBody] LoginDto loginDto)
+        public IActionResult Authenticate([FromBody] LoginDto loginDto)
         {
-            var user = _mapper.Map<User>(loginDto);
-            throw new NotImplementedException();
+            var user = _service.Authenticate(loginDto.Username, loginDto.Password);
+            if (user == null)
+                return BadRequest(new { Message = "Username or password is incorrect." });
+            var token = _tokenManager.GenerateToken(user.Id);
+            return Ok(new
+            {
+                Id = user.Id,
+                Token = token
+            });
         }
 
         [HttpGet]

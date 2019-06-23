@@ -42,38 +42,43 @@ namespace AuthService
             IMapper mapper = mappingConfig.CreateMapper();
             services.AddSingleton(mapper);
             
-            var appConfig = Configuration.GetSection("AppSettings").Get<AppSettings>();
-            var key = Encoding.ASCII.GetBytes(appConfig.Secret);
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingsSection);
+            var appSettings = appSettingsSection.Get<AppSettings>();
+            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
 
-            services.AddAuthentication(a =>
+            services.AddAuthentication(x =>
                 {
-                    a.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    a.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 })
-                .AddJwtBearer(b =>
+                .AddJwtBearer(x =>
                 {
-                    b.Events = new JwtBearerEvents
+                    x.Events = new JwtBearerEvents
                     {
                         OnTokenValidated = context =>
                         {
                             var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                            var userId = int.Parse((context.Principal.Identity.Name));
+                            var userId = int.Parse(context.Principal.Identity.Name);
                             var user = userService.GetById(userId);
                             if (user == null)
-                                context.Fail(("Unauthorized"));
+                            {
+                                // return unauthorized if user no longer exists
+                                context.Fail("Unauthorized");
+                            }
                             return Task.CompletedTask;
                         }
                     };
-                    b.RequireHttpsMetadata = false;
-                    b.SaveToken = true;
-                    b.TokenValidationParameters = new TokenValidationParameters
+                    x.RequireHttpsMetadata = false;
+                    x.SaveToken = true;
+                    x.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(key),
                         ValidateIssuer = false,
                         ValidateAudience = false
                     };
-                });
+                }); 
             services.AddScoped<IUserService, UserService>();
         }
 
@@ -87,7 +92,8 @@ namespace AuthService
             {
                 app.UseHsts();
             }
-
+            app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            app.UseAuthentication();
             app.UseMvc();
         }
     }
